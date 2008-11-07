@@ -1,13 +1,3 @@
-from google.appengine.api import urlfetch
-
-def cap_for_state(state):
-  result = urlfetch.fetch("http://www.weather.gov/alerts/%s.cap" % state.lower())
-  if result.status_code != 200:
-    raise models.CAPError(result.status_code)
-  else:
-    return result.content
-
-# ------------------------------------------------------------------------------
 import re
 import logging
 
@@ -18,6 +8,7 @@ from utils.external.pytz import timezone
 import utils.external.pytz
 from models import place
 import models
+from utils.api import weather
 
 class Alert:
   NAME_RE = re.compile("[.,:]")
@@ -76,7 +67,7 @@ class Alert:
       raise models.InvalidPlace(place)
     logging.debug("Finding alerts for %s" % place)
     alerts = []
-    doc = BeautifulStoneSoup(cap_for_state(place.state_abbreviation))
+    doc = BeautifulStoneSoup(weather.cap_for_state(place.state_abbreviation))
     for info in doc.findAll("cap:info"):
       area = info.find("cap:area")
       if area:
@@ -104,30 +95,11 @@ class Alert:
     return re.match(r"%s\s*(County)?\s*\(%s\)" % (n(place.county), n(place.state)), area, re.IGNORECASE)
 
 
-# ------------------------------------------------------------------------------
-from django.utils import simplejson as json
-
-class AlertEncoder(json.JSONEncoder):
-
-  def default(self, o):
-    return {
-        'place': {
-          'name': o.place.named,
-          'county': o.place.county,
-          'state': o.place.state, 
-          'timezone': o.place.timezone
-        },
-        'event': o.event,
-        'effective': o.effective,
-        'expires': o.expires,
-        'severity': o.severity 
-    }
-
-
 if __name__ == '__main__':
   import sys
   p = place.Place(" ".join(sys.argv[1:]))
   print("Checking alerts for %s" % p)
   for alert in Alert.alerts_for(p):
     print("\tAlert %s Eff %s Exp %s Sev %d" % (alert.event,alert.effective,alert.expires,alert.severity))
+
 

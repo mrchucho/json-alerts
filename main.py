@@ -15,8 +15,9 @@ from django.utils import simplejson as json
 # pytz imports itself, so this is necessary
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'utils', 'external')))
 
-from models.alert import Alert, AlertEncoder
+from models.alert import Alert
 from models.place import Place
+from utils.encoder import AlertEncoder
 
 
 class AlertHandler(webapp.RequestHandler):

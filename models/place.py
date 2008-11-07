@@ -1,35 +1,9 @@
-import urllib2
-
-from google.appengine.api import urlfetch
-
-APP_ID = "OSkXnanV34GmWWqcfpA2CsbB18xDtJF6_mfp7Su.HpqXelHWX.ipRGVAe.dw1j8-"
-
-def fetch(url):
-  result = urlfetch.fetch(url, method=urlfetch.GET, headers={"Accept": "application/xml"})
-  if result.status_code != 200:
-    raise models.GeoError(result.status_code)
-  else:
-    return result.content
-
-def place_for_search_term(search_term):
-  search_term = urllib2.quote("'%s'" % search_term)
-  return fetch("http://where.yahooapis.com/v1/places.q(%s)?appid=%s" % (search_term, APP_ID))
-
-def parent_of_place(place):
-  return fetch("http://where.yahooapis.com/v1/place/%s/parent?appid=%s" % (place, APP_ID))
-
-def children_of_place(place, **kwargs):
-  kwlist = {'type': -1}
-  kwlist.update(kwargs)
-  type = kwlist['type']
-  return fetch("http://where.yahooapis.com/v1/place/%s/belongtos.type(%s)?appid=%s" % (place, type, APP_ID))
-
-# ------------------------------------------------------------------------------
 import re
 
 from utils.external.BeautifulSoup import BeautifulStoneSoup
 
 import models
+from utils.api import geo
 
 class Place:
   TZ_CODE = "31"
@@ -52,7 +26,7 @@ class Place:
     return Place.STATE_ABBREV_RE.sub('',self.abbrev or '')
 
   def _find_place(self):
-    doc = BeautifulStoneSoup(place_for_search_term(self.named))
+    doc = BeautifulStoneSoup(geo.place_for_search_term(self.named))
     for place in doc.places:
       self.place = place
       for types in place.findAll(type=["County","State"]):
@@ -77,7 +51,7 @@ class Place:
 
   def _find_timezone_for_woeid(self,woeid):
     try:
-      doc = BeautifulStoneSoup(children_of_place(woeid,type=Place.TZ_CODE))
+      doc = BeautifulStoneSoup(geo.children_of_place(woeid,type=Place.TZ_CODE))
       for place in doc.places:
         if len(place.findAll("placetypename",code=Place.TZ_CODE)) > 0:
           return place.findAll("name")[0].string
@@ -87,7 +61,7 @@ class Place:
 
   def _find_parent_woeid(self,woeid):
     try:
-      doc = BeautifulStoneSoup(parent_of_place(woeid))
+      doc = BeautifulStoneSoup(geo.parent_of_place(woeid))
       for woeid in doc.woeid:
         return woeid
       return None
