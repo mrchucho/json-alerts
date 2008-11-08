@@ -17,6 +17,7 @@ class Place:
     self.abbrev   = None
     self.woeid    = None
     self.timezone = None
+    self.alerts   = []
 
     self._find_place()
     self._find_timezone()

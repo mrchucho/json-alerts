@@ -16,3 +16,14 @@ class AlertEncoder(json.JSONEncoder):
         'severity': o.severity 
     }
 
+
+class PlaceEncoder(json.JSONEncoder):
+  
+  def default(self, o):
+    return {
+        'place': o.named,
+        'county': o.county,
+        'state': o.state,
+        'timezone': o.timezone,
+        'alerts': [ {'event': alert.event, 'effective': alert.effective, 'expires': alert.expires, 'severity': alert.severity} for alert in o.alerts ]
+    }

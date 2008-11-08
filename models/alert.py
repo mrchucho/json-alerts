@@ -16,17 +16,15 @@ class Alert:
 
   def __init__(self, **kwargs):
     kwlist = {
-        'place': None,
         'event': None,
         'effective': None,
         'expires': None,
         'severity': None
     }
     kwlist.update(kwargs)
-    self.place = kwlist['place']
     self.event = kwlist['event']
-    self.effective = self._adjust_for_tz(kwlist['effective'])
-    self.expires = self._adjust_for_tz(kwlist['expires'])
+    self.effective = kwlist['effective']
+    self.expires = kwlist['expires']
     self.severity = self._severity_for(self.event)
 
   def _severity_for(self, event):
@@ -47,14 +45,6 @@ class Alert:
     except KeyError:
       return 1
 
-  def _adjust_for_tz(self, utc_datetime):
-    tz = timezone(self.place.timezone or 'UTC')
-    date, time = utc_datetime.split('T')
-    y,m,d,h,mi,s = [int(n) for n in date.split('-') + time.split(':')]
-    datetime_utc = datetime(y, m, d, h, mi, s, 0, tzinfo=utils.external.pytz.utc)
-    datetime_tz  = datetime_utc.astimezone(tz)
-    return datetime_tz.strftime(self.FORMAT)
-  
   def __str__(self):
     return "Alert %s Eff %s Exp %s Sev %d" % (self.event,self.effective,self.expires,self.severity)
 
@@ -74,10 +64,9 @@ class Alert:
         area_desc = area.find("cap:areadesc").string
         if cls.names_match(area_desc, place):
           alert = Alert(
-              place=place,
               event=info.find("cap:event").string,
-              effective=info.find("cap:effective").string,
-              expires=info.find("cap:expires").string
+              effective=cls.adjust_for_tz(info.find("cap:effective").string, place.timezone),
+              expires=cls.adjust_for_tz(info.find("cap:expires").string, place.timezone)
           )
           alerts.append(alert)
     return alerts
@@ -94,6 +83,15 @@ class Alert:
     area = n(area)
     return re.match(r"%s\s*(County)?\s*\(%s\)" % (n(place.county), n(place.state)), area, re.IGNORECASE)
 
+  @classmethod
+  def adjust_for_tz(cls, utc_datetime, place_timezone):
+    tz = timezone(place_timezone or 'UTC')
+    date, time = utc_datetime.split('T')
+    y,m,d,h,mi,s = [int(n) for n in date.split('-') + time.split(':')]
+    datetime_utc = datetime(y, m, d, h, mi, s, 0, tzinfo=utils.external.pytz.utc)
+    datetime_tz  = datetime_utc.astimezone(tz)
+    return datetime_tz.strftime(cls.FORMAT)
+  
 
 if __name__ == '__main__':
   import sys

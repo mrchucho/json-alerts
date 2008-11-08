@@ -17,8 +17,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'util
 
 from models.alert import Alert
 from models.place import Place
-from utils.encoder import AlertEncoder
-
+from models import InvalidPlace
+from utils.encoder import PlaceEncoder
 
 class AlertHandler(webapp.RequestHandler):
   PLACE_KEY = "/%s/place/"
@@ -29,7 +29,7 @@ class AlertHandler(webapp.RequestHandler):
     callback = self.request.get("callback", None)
 
     if not place_name:
-      alerts = []
+      raise InvalidPlace(" ")
     else:
       place_name = urllib2.unquote(place_name)
       p = memcache.get(self.PLACE_KEY % place_name)
@@ -42,13 +42,14 @@ class AlertHandler(webapp.RequestHandler):
         alerts = Alert.alerts_for(p)
         memcache.set(self.ALERT_KEY % place_name, alerts, time=10) # cache a SHORT time
 
-    javascript = json.dumps(alerts, sort_keys=True, indent=2, cls=AlertEncoder)
+      p.alerts = alerts
+      javascript = json.dumps(p, sort_keys=True, indent=2, cls=PlaceEncoder)
 
-    self.response.headers['Content-Type'] = 'text/javascript'
-    self.response.out.write("%s(%s)" % (callback, javascript) if callback else javascript)
+      self.response.headers['Content-Type'] = 'text/javascript'
+      self.response.out.write("%s(%s)" % (callback, javascript) if callback else javascript)
 
 
-  def _handle_exception(self, exception, debug_mode=False):
+  def handle_exception(self, exception, debug_mode=False):
     logging.error(exception)
     if hasattr(exception, "code"):
       status = exception.code
