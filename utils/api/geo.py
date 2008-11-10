@@ -2,6 +2,8 @@ import urllib2
 
 from google.appengine.api import urlfetch
 
+import models
+
 APP_ID = "OSkXnanV34GmWWqcfpA2CsbB18xDtJF6_mfp7Su.HpqXelHWX.ipRGVAe.dw1j8-"
 
 def fetch(url):

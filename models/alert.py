@@ -12,6 +12,7 @@ from utils.api import weather
 
 class Alert:
   NAME_RE = re.compile("[.,:]")
+  FORECAST_RE = re.compile("Short Term Forecast", re.IGNORECASE)
   FORMAT  = "%Y-%m-%d %H:%M:%S %Z"
 
   def __init__(self, **kwargs):
@@ -63,12 +64,14 @@ class Alert:
       if area:
         area_desc = area.find("cap:areadesc").string
         if cls.names_match(area_desc, place):
-          alert = Alert(
-              event=info.find("cap:event").string,
-              effective=cls.adjust_for_tz(info.find("cap:effective").string, place.timezone),
-              expires=cls.adjust_for_tz(info.find("cap:expires").string, place.timezone)
-          )
-          alerts.append(alert)
+          event = info.find("cap:event").string
+          if not cls.FORECAST_RE.match(event): # i.e. ignore 'Short Term Forecast' alerts
+            alert = Alert(
+                event=event,
+                effective=cls.adjust_for_tz(info.find("cap:effective").string, place.timezone),
+                expires=cls.adjust_for_tz(info.find("cap:expires").string, place.timezone)
+            )
+            alerts.append(alert)
     return alerts
 
   @classmethod
