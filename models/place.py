@@ -29,7 +29,7 @@ class Place:
 
   def _find_place(self):
     doc = BeautifulStoneSoup(geo.place_for_search_term(self.named))
-    if doc.places.count > 0:
+    if int(doc.places['yahoo:total']) > 0:
       for place in doc.places:
         self.place = place
         for types in place.findAll(type=["County","State"]):
