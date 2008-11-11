@@ -1,5 +1,5 @@
 application: json-alerts
-version: 1
+version: 2
 runtime: python
 api_version: 1
 
@@ -12,5 +12,9 @@ handlers:
 - url: /crossdomain.xml
   static_files: static/crossdomain.xml
   upload: static/crossdomain.xml
+- url: /load
+  script: models/zone.py
+  login: admin
 - url: .*
   script: main.py
+

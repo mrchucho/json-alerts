@@ -2,6 +2,7 @@ import re
 
 from utils.external.BeautifulSoup import BeautifulStoneSoup
 
+from models.zone import Zone
 import models
 from utils.api import geo
 
@@ -17,9 +18,11 @@ class Place:
     self.abbrev   = None
     self.woeid    = None
     self.timezone = None
+    self.fips     = None
     self.alerts   = []
 
     self._find_place()
+    self._find_fips()
     self._find_timezone()
 
   @property
@@ -38,6 +41,9 @@ class Place:
           self.abbrev = types['code']
       for woeid in place.woeid:
         self.woeid = woeid
+
+  def _find_fips(self):
+    self.fips = Zone.fips_for_county(county=str(self.county),state=str(self.state_abbreviation))
 
   def _find_timezone(self):
     woeid = self.woeid
@@ -70,8 +76,8 @@ class Place:
       return None
 
   def __str__(self):
-    return ("County: %s State: %s (%s) Abbrev: %s WOEID: %s Timezone: %s" %
-        (self.county, self.state, self.state_abbreviation, self.abbrev, self.woeid, self.timezone))
+    return ("County: %s State: %s (%s) Abbrev: %s WOEID: %s Timezone: %s FIPS: %s" %
+        (self.county, self.state, self.state_abbreviation, self.abbrev, self.woeid, self.timezone, self.fips))
 
 
 
