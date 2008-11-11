@@ -15,16 +15,20 @@ class Zone(db.Model):
   fips      = db.StringProperty() # 5
   time_zone = db.StringProperty() # 2
   fe_area   = db.StringProperty() # 2
-  latitude  = db.FloatProperty() # 9,5
-  longitude = db.FloatProperty() # 10,5
+  latitude  = db.FloatProperty()  # 9,5
+  longitude = db.FloatProperty()  # 10,5
 
   @classmethod
   def fips_for_county(cls, county=None, state=None):
-    zone = cls.all().filter("county =", county).filter("state =", state).get()
-    if zone:
-      return zone.fips
-    else:
-      return ""
+    try:
+      zone = cls.all().filter("county =", county).filter("state =", state).get()
+      if zone:
+        return int(zone.fips)
+      else:
+        return 0
+    except ValueError:
+      logging.error("FIPS %s is invalid" % zone.fips)
+      return 0
 
 
 class ZoneLoader(bulkload.Loader):
