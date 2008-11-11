@@ -62,8 +62,7 @@ class Alert:
     for info in doc.findAll("cap:info"):
       area = info.find("cap:area")
       if area:
-        geo_code = int(area.find("cap:geocode").string)
-        if geo_code == place.fips:
+        if int(area.find("cap:geocode").string) == place.fips:
           event = info.find("cap:event").string
           if not cls.FORECAST_RE.match(event): # i.e. ignore 'Short Term Forecast' alerts
             alert = Alert(
