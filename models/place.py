@@ -1,4 +1,5 @@
 import re
+import logging
 
 from utils.external.BeautifulSoup import BeautifulStoneSoup
 
@@ -31,16 +32,17 @@ class Place:
 
   def _find_place(self):
     doc = BeautifulStoneSoup(geo.place_for_search_term(self.named))
-    for place in doc.places:
-      self.place = place
-      for types in place.findAll(type=["County","State"]):
-        if types['type'] == "County":
-          self.county = types.string
-        else:
-          self.state  = types.string
-          self.abbrev = types['code']
-      for woeid in place.woeid:
-        self.woeid = woeid
+    if int(doc.places['yahoo:total']) > 0:
+      for place in doc.places:
+        self.place = place
+        for types in place.findAll(type=["County","State"]):
+          if types['type'] == "County":
+            self.county = types.string
+          else:
+            self.state  = types.string
+            self.abbrev = types['code']
+        for woeid in place.woeid:
+          self.woeid = woeid
 
   def _find_fips(self):
     self.fips = Zone.fips_for_county(county=str(self.county),state=str(self.state_abbreviation))
