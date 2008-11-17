@@ -30,6 +30,9 @@ class AlertHandler(webapp.RequestHandler):
 
     if not place_name:
       raise InvalidPlace(" ")
+    elif place_name == "favicon.ico":
+      """ This happens so often, it's annoying. """
+      self.response.set_status(204)
     else:
       place_name = urllib2.unquote(place_name)
       p = memcache.get(self.PLACE_KEY % place_name)
