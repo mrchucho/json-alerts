@@ -5,6 +5,7 @@ import urllib2
 import logging
 import os
 import sys
+import traceback
 
 from google.appengine.ext import webapp
 from google.appengine.api import memcache
@@ -53,7 +54,7 @@ class AlertHandler(webapp.RequestHandler):
 
 
   def handle_exception(self, exception, debug_mode=False):
-    logging.error(exception)
+    logging.error(traceback.format_exception(*sys.exc_info()))
     if hasattr(exception, "code"):
       status = exception.code
       message = exception.msg
