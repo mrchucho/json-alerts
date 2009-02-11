@@ -44,7 +44,11 @@ class AlertHandler(webapp.RequestHandler):
       alerts = memcache.get(self.ALERT_KEY % place_name)
       if not alerts:
         alerts = Alert.alerts_for(p)
-        memcache.set(self.ALERT_KEY % place_name, alerts, time=10) # cache a SHORT time
+        try:
+          memcache.set(self.ALERT_KEY % place_name, alerts, time=10) # cache a SHORT time
+        except:
+          logging.error('Error setting memcache.')
+          logging.error(''.join(traceback.format_exception(*sys.exc_info())))
 
       p.alerts = alerts
       javascript = json.dumps(p, sort_keys=True, indent=2, cls=PlaceEncoder)
@@ -54,7 +58,7 @@ class AlertHandler(webapp.RequestHandler):
 
 
   def handle_exception(self, exception, debug_mode=False):
-    logging.error(traceback.format_exception(*sys.exc_info()))
+    logging.error(''.join(traceback.format_exception(*sys.exc_info())))
     if hasattr(exception, "code"):
       status = exception.code
       message = exception.msg
