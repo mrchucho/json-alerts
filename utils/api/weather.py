@@ -3,7 +3,7 @@ from models import CAPError
 
 def cap_for_state(state):
   try:
-    result = urlfetch.fetch("http://www.weather.gov/alerts/%s.cap" % state.lower())
+    result = urlfetch.fetch("http://alerts.weather.gov/cap/%s.atom" % state.lower())
     if result.status_code != 200:
       raise CAPError(result.status_code)
     else:
