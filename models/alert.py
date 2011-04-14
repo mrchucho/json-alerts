@@ -42,13 +42,13 @@ class Alert:
     alerts = []
     feed = feedparser.parse(weather.cap_for_state(place.state_abbreviation))
     for entry in feed.entries:
-      alert = Alert(
-          event=entry.summary,
-          severity=entry.cap_severity,
-          effective=cls.adjust_for_tz(entry.cap_effective, place.timezone),
-          expires=cls.adjust_for_tz(entry.cap_expires, place.timezone)
-          )
-      alerts.append(alert)
+      if place.county in entry.cap_areadesc.split("; "):
+        alert = Alert(
+            event=entry.summary,
+            severity=entry.cap_severity,
+            effective=cls.adjust_for_tz(entry.cap_effective, place.timezone),
+            expires=cls.adjust_for_tz(entry.cap_expires, place.timezone))
+        alerts.append(alert)
     return alerts
 
   @classmethod
