@@ -2,7 +2,7 @@ import re
 import logging
 
 from datetime import datetime
-from utils.external.BeautifulSoup import BeautifulStoneSoup
+from utils.external import feedparser
 
 from utils.external.pytz import timezone
 import utils.external.pytz
@@ -26,28 +26,10 @@ class Alert:
     self.event = kwlist['event']
     self.effective = kwlist['effective']
     self.expires = kwlist['expires']
-    self.severity = self._severity_for(self.event)
-
-  def _severity_for(self, event):
-    """ Return a severity (for sorting) between 0 (lowest) and 10 (highest).
-
-    Anything (other than a short-term forecast) besides those listed here is assumed
-    to be of a lower importance. Short-term forecasts are not considered severe.
-    """
-    try:
-      return {
-          "tornado warning": 10,
-          "warning": 9,
-          "watch": 8,
-          "advisory": 7,
-          "statement": 6,
-          "short term forecast": 0,
-          }[event.lower()]
-    except KeyError:
-      return 1
+    self.severity = kwlist['severity']
 
   def __str__(self):
-    return "Alert %s Eff %s Exp %s Sev %d" % (self.event,self.effective,self.expires,self.severity)
+    return "Alert %s Eff %s Exp %s Sev %s" % (self.event,self.effective,self.expires,self.severity)
 
   @classmethod
   def alerts_for(cls, place):
@@ -58,19 +40,15 @@ class Alert:
       raise models.InvalidPlace(place)
     logging.debug("Finding alerts for %s" % place)
     alerts = []
-    doc = BeautifulStoneSoup(weather.cap_for_state(place.state_abbreviation))
-    for info in doc.findAll("cap:info"):
-      area = info.find("cap:area")
-      if area:
-        if int(area.find("cap:geocode").string) == place.fips:
-          event = info.find("cap:event").string
-          if not cls.FORECAST_RE.match(event): # i.e. ignore 'Short Term Forecast' alerts
-            alert = Alert(
-                event=event,
-                effective=cls.adjust_for_tz(info.find("cap:effective").string, place.timezone),
-                expires=cls.adjust_for_tz(info.find("cap:expires").string, place.timezone)
-            )
-            alerts.append(alert)
+    feed = feedparser.parse(weather.cap_for_state(place.state_abbreviation))
+    for entry in feed.entries:
+      alert = Alert(
+          event=entry.summary,
+          severity=entry.cap_severity,
+          effective=cls.adjust_for_tz(entry.cap_effective, place.timezone),
+          expires=cls.adjust_for_tz(entry.cap_expires, place.timezone)
+          )
+      alerts.append(alert)
     return alerts
 
   @classmethod
@@ -89,17 +67,18 @@ class Alert:
   def adjust_for_tz(cls, utc_datetime, place_timezone):
     tz = timezone(place_timezone or 'UTC')
     date, time = utc_datetime.split('T')
+    time, offset = time.split("-")
     y,m,d,h,mi,s = [int(n) for n in date.split('-') + time.split(':')]
     datetime_utc = datetime(y, m, d, h, mi, s, 0, tzinfo=utils.external.pytz.utc)
     datetime_tz  = datetime_utc.astimezone(tz)
     return datetime_tz.strftime(cls.FORMAT)
-  
+
 
 if __name__ == '__main__':
   import sys
   p = place.Place(" ".join(sys.argv[1:]))
   print("Checking alerts for %s" % p)
   for alert in Alert.alerts_for(p):
-    print("\tAlert %s Eff %s Exp %s Sev %d" % (alert.event,alert.effective,alert.expires,alert.severity))
+    print("\tAlert %s Eff %s Exp %s Sev %s" % (alert.event,alert.effective,alert.expires,alert.severity))
 
 
