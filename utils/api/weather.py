@@ -1,6 +1,8 @@
 from google.appengine.api import urlfetch
 from models import CAPError
 
+from models import CAPError
+
 def cap_for_state(state):
   try:
     result = urlfetch.fetch("http://alerts.weather.gov/cap/%s.atom" % state.lower())
