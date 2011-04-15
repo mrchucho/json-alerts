@@ -46,8 +46,8 @@ class Alert:
         alert = Alert(
             event=entry.summary,
             severity=entry.cap_severity,
-            effective=cls.adjust_for_tz(entry.cap_effective, place.timezone),
-            expires=cls.adjust_for_tz(entry.cap_expires, place.timezone))
+            effective=cls.parse_time(entry.cap_effective, place.timezone),
+            expires=cls.parse_time(entry.cap_expires, place.timezone))
         alerts.append(alert)
     return alerts
 
@@ -62,6 +62,14 @@ class Alert:
 
     area = n(area)
     return re.match(r"%s\s*(County)?\s*\(%s\)" % (n(place.county), n(place.state)), area, re.IGNORECASE)
+
+  @classmethod
+  def parse_time(cls, cap_datetime, place_timezone):
+    tz = timezone(place_timezone or 'UTC')
+    date, time   = cap_datetime.split('T')
+    time, offset = time.split("-")
+    y,m,d,h,mi,s = [int(n) for n in date.split('-') + time.split(':')]
+    return datetime(y, m, d, h, mi, s, 0, tzinfo=tz).strftime(cls.FORMAT)
 
   @classmethod
   def adjust_for_tz(cls, utc_datetime, place_timezone):
